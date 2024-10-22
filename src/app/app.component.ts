@@ -14,6 +14,7 @@ import { response } from 'express';
 export class AppComponent {
   messages: { text: string; sender: 'user' | 'bot' }[] = [];
   userInput: string = '';
+  botTyping: boolean = false;
 
   constructor(private service:TextSummarizationserviceService) {}
 
@@ -26,16 +27,36 @@ export class AppComponent {
   }
 
   getBotResponse(userMessage: string) {
-    // Simulate bot response with a delay
+    this.botTyping = true;
     this.service.postMessage({content:userMessage}).subscribe(
       (response) => {
-        const botMessage = `Bot: Response to "${response.summary}"`;
-        this.messages.push({ text: botMessage, sender: 'bot' });
+        const botMessage = `Bot: Response: "${response.summary}"`;
+        // this.messages.push({ text: botMessage, sender: 'bot' });
+        this.simulateTyping(botMessage);
       },
       (error) => {
         console.error('Error posting message', error);
-      })
-    setTimeout(() => {
-    }, 1000);
+      });
+  }
+
+  simulateTyping(botMessage: string) {
+    this.botTyping = true;
+    let displayedText = '';
+    let index = 0;
+    
+    const typingInterval = setInterval(() => {
+      if (index < botMessage.length) {
+        displayedText += botMessage.charAt(index);
+        index++;
+        // Update the message as it's being typed
+        if (this.messages[this.messages.length - 1].sender !== 'bot') {
+          this.messages.push({ text: '', sender: 'bot' });
+        }
+        this.messages[this.messages.length - 1].text = displayedText;
+      } else {
+        clearInterval(typingInterval);
+        this.botTyping = false;  // Typing finished
+      }
+    }, 50); // Adjust speed by changing the timeout value
   }
 }
